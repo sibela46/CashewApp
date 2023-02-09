@@ -5,6 +5,7 @@
 #include "Walnut/Timer.h"
 
 #include "Renderer.h"
+#include "Parser.h"
 
 using namespace Walnut;
 
@@ -20,6 +21,9 @@ public:
 		{
 			Render();
 		}
+
+		RenderJSONStatsFields();
+
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
@@ -37,8 +41,44 @@ public:
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+	}
+	void RenderJSONStatsFields()
+	{
+		static char jsonFileBuffer[128];
+		ImGui::InputText("JSON File Name", jsonFileBuffer, IM_ARRAYSIZE(jsonFileBuffer));
+		if (ImGui::Button("Load"))
+		{
+			std::string file(jsonFileBuffer);
+			std::string path = "./data/";
+			std::string jsonExt = ".json";
+			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str()))
+				outputText = "File " + file + ".json loaded.";
+			else
+				outputText = "File " + file + ".json failed to load.";
+		}
 
-		Render();
+		if (ImGui::Button("Average Area"))
+		{
+			float area = m_Parser.CalculateAverageAreaMultithreaded();
+			outputText = "Average triangle area for loaded file is " + std::to_string(area);
+		}
+		if (ImGui::Button("Smallest Area"))
+		{
+			float area = m_Parser.CalculateSmallestAreaMultithreaded();
+			outputText = "Smallest triangle area for loaded file is " + std::to_string(area);
+		}
+		if (ImGui::Button("Largest Area"))
+		{
+			float area = m_Parser.CalculateLargestAreaMultithreaded();
+			outputText = "Largesst triangle area for loaded file is " + std::to_string(area);
+		}
+		if (ImGui::Button("Closed Mesh?"))
+		{
+			bool closed = m_Parser.IsClosedMesh();
+			outputText = closed ? "True" : "False";
+		}
+
+		ImGui::Text(outputText.c_str());
 	}
 	void Render()
 	{
@@ -51,9 +91,11 @@ public:
 	}
 private:
 	Renderer m_Renderer;
-	uint32_t* m_FinalImageData = nullptr;
+	Parser m_Parser;
+	std::string outputText = "";
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0;
+	std::string fileName = "Type in the JSON file you want to load.";
 };
 
 Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
