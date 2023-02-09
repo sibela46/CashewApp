@@ -59,7 +59,7 @@ struct Edge
 	Edge(int vIdxA, int vIdxB) : vertexIdxA(vIdxA), vertexIdxB(vIdxB) {};
 
 	bool const operator==(const Edge& o) const { return std::tie(vertexIdxA, vertexIdxB) == std::tie(o.vertexIdxA, o.vertexIdxB); }
-	bool const operator<(const Edge & o) const { return std::tie(vertexIdxA, vertexIdxB) < std::tie(o.vertexIdxA, o.vertexIdxB); }
+	bool const operator<(const Edge& o) const { return std::tie(vertexIdxA, vertexIdxB) < std::tie(o.vertexIdxA, o.vertexIdxB); }
 };
 
 // Algebra

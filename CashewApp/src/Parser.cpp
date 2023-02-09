@@ -11,6 +11,7 @@ bool Parser::ParseFile(const char* fileName)
 	m_triangles.clear();
 	m_vertices.clear();
 	m_edges.clear();
+	m_quadingles.clear();
 
 	// Open the file
 	FILE* fp = fopen(fileName, "rb");
@@ -107,13 +108,42 @@ bool Parser::ParseFile(const char* fileName)
 					vertex2.AddFace(triangleIdx);
 
 					// Calculate edges for fast closed mesh calculation
-					Edge edge1 = Edge(vertex0Idx, vertex1Idx);
-					Edge edge2 = Edge(vertex0Idx, vertex2Idx);
-					Edge edge3 = Edge(vertex1Idx, vertex2Idx);
+					Edge edge = Edge(vertex0Idx, vertex1Idx);
+					Edge edgeSwap = Edge(vertex1Idx, vertex0Idx);
+					auto itEdge = m_edges.find(edge);
+					auto itEdgeSwap = m_edges.find(edgeSwap);
 
-					m_edges[edge1].push_back(triangleIdx);
-					m_edges[edge2].push_back(triangleIdx);
-					m_edges[edge3].push_back(triangleIdx);
+					if (itEdge == m_edges.end() && itEdgeSwap == m_edges.end())
+						m_edges[edge].push_back(triangleIdx);
+					else if (itEdge != m_edges.end())
+						itEdge->second.push_back(triangleIdx);
+					else if (itEdgeSwap != m_edges.end())
+						itEdgeSwap->second.push_back(triangleIdx);
+
+					edge = Edge(vertex0Idx, vertex2Idx);
+					edgeSwap = Edge(vertex2Idx, vertex0Idx);
+					itEdge = m_edges.find(edge);
+					itEdgeSwap = m_edges.find(edgeSwap);
+
+					if (itEdge == m_edges.end() && itEdgeSwap == m_edges.end())
+						m_edges[edge].push_back(triangleIdx);
+					else if (itEdge != m_edges.end())
+						itEdge->second.push_back(triangleIdx);
+					else if (itEdgeSwap != m_edges.end())
+						itEdgeSwap->second.push_back(triangleIdx);
+
+					edge = Edge(vertex1Idx, vertex2Idx);
+					edgeSwap = Edge(vertex2Idx, vertex1Idx);
+					itEdge = m_edges.find(edge);
+					itEdgeSwap = m_edges.find(edgeSwap);
+
+					if (itEdge == m_edges.end() && itEdgeSwap == m_edges.end())
+						m_edges[edge].push_back(triangleIdx);
+					else if (itEdge != m_edges.end())
+						itEdge->second.push_back(triangleIdx);
+					else if (itEdgeSwap != m_edges.end())
+						itEdgeSwap->second.push_back(triangleIdx);
+						
 
 					// Keep track of current triangle idx
 					triangleIdx++;
