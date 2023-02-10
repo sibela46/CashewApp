@@ -4,13 +4,17 @@
 #include <memory>
 #include <glm/fwd.hpp>
 
+class Scene;
+
 class Renderer
 {
 public:
-	Renderer() = default;
+	Renderer();
 
 	void OnResize(uint32_t width, uint32_t height);
 	void Render();
+
+	uint32_t Trace(glm::vec2 coord);
 
 	std::shared_ptr<Walnut::Image> GetFinalImage() const { return m_FinalImage; }
 
@@ -20,4 +24,5 @@ private:
 private:
 	uint32_t* m_FinalImageData;
 	std::shared_ptr<Walnut::Image> m_FinalImage;
+	std::unique_ptr<Scene> m_Scene;
 };

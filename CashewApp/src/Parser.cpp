@@ -1,6 +1,7 @@
-#include "Parser.h"
+#include "utils.h"
 
 std::mutex mtx;
+
 Parser::Parser()
 {
 
@@ -86,21 +87,19 @@ bool Parser::ParseFile(const char* fileName)
 
 					float3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
 
-					m_triangles.push_back(Triangle(vertex0, vertex1, vertex2, normal));
+					m_triangles.push_back(Triangle(triangleIdx, v0, v1, v2, normal));
 					
 					// Find centre of current triangle
-					float3 centroidPos = (v0 + v1 + v2) * 0.333f;
-					Vertex centroid = Vertex(centroidPos.x, centroidPos.y, centroidPos.z);
+					float3 centroid = (v0 + v1 + v2) * 0.333f;
 
 					// Find median of one triangle edge
-					float3 edgeMedianPos = (v1 - v0) / 2;
-					Vertex edgeMedianVertex = Vertex(edgeMedianPos.x, edgeMedianPos.y, edgeMedianPos.z);
+					float3 edgeMedian = (v1 - v0) / 2;
 
 					// Split triangle into four smaller ones
-					m_quadingles.push_back(Triangle(vertex0, edgeMedianVertex, centroid, normal));
-					m_quadingles.push_back(Triangle(edgeMedianVertex, vertex1, centroid, normal));
-					m_quadingles.push_back(Triangle(vertex0, vertex2, centroid, normal));
-					m_quadingles.push_back(Triangle(vertex1, vertex2, centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx, v0, edgeMedian, centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +1, edgeMedian, v1, centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +2, v0, v2, centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +3,v1, v2, centroid, normal));
 
 					// Add face index to each of each vertices' struct (for calculating smooth normals after that)
 					vertex0.AddFace(triangleIdx);
@@ -179,12 +178,9 @@ void Parser::CalculateSmallestTriangleArea(const std::vector<Triangle>& triangle
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		Vertex vertex0 = triangle.vertex0;
-		Vertex vertex1 = triangle.vertex1;
-		Vertex vertex2 = triangle.vertex2;
-		float a = length(vertex2.GetPosition() - vertex0.GetPosition());
-		float b = length(vertex1.GetPosition() - vertex0.GetPosition());
-		float c = length(vertex2.GetPosition() - vertex1.GetPosition());
+		float a = length(triangle.vertex2 - triangle.vertex0);
+		float b = length(triangle.vertex1 - triangle.vertex0);
+		float c = length(triangle.vertex2 - triangle.vertex1);
 		float area = Area(a, b, c);
 		if (area > 0 && area < minArea)
 		{
@@ -200,12 +196,9 @@ void Parser::CalculateLargestTriangleArea(const std::vector<Triangle>& triangles
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		Vertex vertex0 = triangle.vertex0;
-		Vertex vertex1 = triangle.vertex1;
-		Vertex vertex2 = triangle.vertex2;
-		float a = length(vertex2.GetPosition() - vertex0.GetPosition());
-		float b = length(vertex1.GetPosition() - vertex0.GetPosition());
-		float c = length(vertex2.GetPosition() - vertex1.GetPosition());
+		float a = length(triangle.vertex2 - triangle.vertex0);
+		float b = length(triangle.vertex1 - triangle.vertex0);
+		float c = length(triangle.vertex2 - triangle.vertex1);
 		float area = Area(a, b, c);
 		if (area > 0 && area > maxArea)
 		{
@@ -221,12 +214,9 @@ void Parser::CalculateAverageTriangleArea(const std::vector<Triangle>& triangles
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		Vertex vertex0 = triangle.vertex0;
-		Vertex vertex1 = triangle.vertex1;
-		Vertex vertex2 = triangle.vertex2;
-		float a = length(vertex2.GetPosition() - vertex0.GetPosition());
-		float b = length(vertex1.GetPosition() - vertex0.GetPosition());
-		float c = length(vertex2.GetPosition() - vertex1.GetPosition());
+		float a = length(triangle.vertex2 - triangle.vertex0);
+		float b = length(triangle.vertex1 - triangle.vertex0);
+		float c = length(triangle.vertex2 - triangle.vertex1);
 
 		std::lock_guard<std::mutex> lock(mtx);
 		areaSum += Area(a, b, c);

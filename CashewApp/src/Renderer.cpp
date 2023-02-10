@@ -1,6 +1,11 @@
-#include "Renderer.h"
-#include <glm/glm.hpp> 
+#include "utils.h"
 
+#include <glm/glm.hpp>
+
+Renderer::Renderer()
+{
+	m_Scene = std::make_unique<Scene>();
+}
 void Renderer::OnResize(uint32_t width, uint32_t height)
 {
 	if (m_FinalImage)
@@ -27,7 +32,7 @@ void Renderer::Render()
 		{
 			glm::vec2 coord = { (float)x / (float)m_FinalImage->GetWidth(), (float)y / (float)m_FinalImage->GetWidth() };
 			coord = coord * 2.0f - 1.0f; // -1 -> 1
-			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = PerPixel(coord);
+			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = Trace(coord);
 		}
 	}
 
@@ -54,6 +59,20 @@ uint32_t Renderer::PerPixel(glm::vec2 coord)
 	{
 		return 0xffff0000;
 	}
+
+	return 0xff000000;
+}
+
+uint32_t Renderer::Trace(glm::vec2 coord)
+{
+	float3 rayOrigin = float3(0.f, 0.f, -2.f);
+	float3 rayDirection = float3(coord.x, coord.y, 1.f);
+	Ray ray = Ray(rayOrigin, rayDirection);
+
+	m_Scene.get()->FindNearest(ray);
+
+	if (ray.hitObjIdx == -1) return 0xff000000;
+	if (ray.hitObjIdx == 0) return 0xffff0000;
 
 	return 0xff000000;
 }

@@ -4,8 +4,7 @@
 #include "Walnut/Image.h"
 #include "Walnut/Timer.h"
 
-#include "Renderer.h"
-#include "Parser.h"
+#include "utils.h"
 
 using namespace Walnut;
 
