@@ -5,7 +5,6 @@
 #include <glm/fwd.hpp>
 
 class Scene;
-
 class Renderer
 {
 public:
@@ -17,6 +16,9 @@ public:
 	uint32_t Trace(glm::vec2 coord);
 
 	std::shared_ptr<Walnut::Image> GetFinalImage() const { return m_FinalImage; }
+	std::shared_ptr<Scene> GetScene() const { return m_Scene; }
+
+	bool IsPointInside(float3 point) const;
 
 private:
 	uint32_t PerPixel(glm::vec2 coord);
@@ -24,5 +26,5 @@ private:
 private:
 	uint32_t* m_FinalImageData;
 	std::shared_ptr<Walnut::Image> m_FinalImage;
-	std::unique_ptr<Scene> m_Scene;
+	std::shared_ptr<Scene> m_Scene;
 };

@@ -5,6 +5,7 @@ class Scene
 public:
 	Scene();
 
+	void LoadModelToScene(std::vector<Triangle> triangles);
 	void FindNearest(Ray& ray);
 
 private:

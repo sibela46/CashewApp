@@ -51,7 +51,10 @@ public:
 			std::string path = "./data/";
 			std::string jsonExt = ".json";
 			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str()))
+			{
+				m_Renderer.GetScene()->LoadModelToScene(m_Parser.GetTriangles());
 				outputText = "File " + file + ".json loaded.";
+			}
 			else
 				outputText = "File " + file + ".json failed to load.";
 		}
@@ -71,10 +74,20 @@ public:
 			float area = m_Parser.CalculateLargestAreaMultithreaded();
 			outputText = "Largesst triangle area for loaded file is " + std::to_string(area);
 		}
-		if (ImGui::Button("Closed Mesh?"))
+		if (ImGui::Button("Closed Mesh"))
 		{
 			bool closed = m_Parser.IsClosedMesh();
 			outputText = closed ? "True" : "False";
+		}
+
+		ImGui::InputFloat("Query point X:", &queryPoint.x);
+		ImGui::InputFloat("Query point Y:", &queryPoint.y);
+		ImGui::InputFloat("Query point Z:", &queryPoint.z);
+
+		if (ImGui::Button("Check inside"))
+		{
+			bool inside = m_Renderer.IsPointInside(queryPoint);
+			outputText = inside ? "Point is inside loaded mesh." : "Point is outside loaded mesh.";
 		}
 
 		ImGui::Text(outputText.c_str());
@@ -94,6 +107,7 @@ private:
 	std::string outputText = "";
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0;
+	float3 queryPoint = float3(0);
 	std::string fileName = "Type in the JSON file you want to load.";
 };
 

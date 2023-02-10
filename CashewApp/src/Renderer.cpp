@@ -4,8 +4,9 @@
 
 Renderer::Renderer()
 {
-	m_Scene = std::make_unique<Scene>();
+	m_Scene = std::make_shared<Scene>();
 }
+
 void Renderer::OnResize(uint32_t width, uint32_t height)
 {
 	if (m_FinalImage)
@@ -72,7 +73,26 @@ uint32_t Renderer::Trace(glm::vec2 coord)
 	m_Scene.get()->FindNearest(ray);
 
 	if (ray.hitObjIdx == -1) return 0xff000000;
-	if (ray.hitObjIdx == 0) return 0xffff0000;
+	return 0xffff0000;
+}
 
-	return 0xff000000;
+bool Renderer::IsPointInside(float3 point) const
+{
+	// Shoot ray from query point in positive z-axis
+	float3 direction = float3(0.f, 0.f, 1.f);
+	Ray ray(point, direction);
+
+	m_Scene->FindNearest(ray);
+
+	// If we don't hit anything, it lies ouside
+	if (ray.hitObjIdx == -1) return false;
+
+	// Shoot a second ray from intersection point
+	float3 hitPoint = ray.GetIntersectionPoint();
+	ray = Ray(hitPoint, direction);
+
+	// If we don't hit anything, the query point was inside
+	if (ray.hitObjIdx == -1) return true;
+
+	return false;
 }
