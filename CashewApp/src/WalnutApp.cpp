@@ -11,6 +11,14 @@ using namespace Walnut;
 class ExampleLayer : public Walnut::Layer
 {
 public:
+	virtual void OnUpdate(float ts) override
+	{
+		/*if (GetKeyState('S') & 0x8000)
+		{
+			m_Renderer.TranslateCamera(float3(0.f, 0.f, -0.5f));
+		}*/
+	}
+
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
@@ -20,8 +28,20 @@ public:
 		{
 			Render();
 		}
-
+		
 		RenderJSONStatsFields();
+
+		ImGui::Text("Camera Settings");
+
+		ImGui::DragFloat("Camera X", &m_Renderer.GetCameraPos().x, 0.1f);
+		ImGui::DragFloat("Camera Y", &m_Renderer.GetCameraPos().y, 0.1f);
+		ImGui::DragFloat("Camera Z", &m_Renderer.GetCameraPos().z, 0.1f);
+
+		ImGui::Text("Light Settings");
+
+		ImGui::DragFloat("Light X", &m_Renderer.GetScene()->GetLightPos().x, 0.1f);
+		ImGui::DragFloat("Light Y", &m_Renderer.GetScene()->GetLightPos().y, 0.1f);
+		ImGui::DragFloat("Light Z", &m_Renderer.GetScene()->GetLightPos().z, 0.1f);
 
 		ImGui::End();
 
@@ -52,12 +72,15 @@ public:
 			std::string jsonExt = ".json";
 			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str()))
 			{
-				m_Renderer.GetScene()->LoadModelToScene(m_Parser.GetTriangles());
+				m_Parser.CalculateVertexNormals();
+				m_Renderer.GetScene()->LoadModelToScene(m_Parser.GetTriangles(), m_Parser.GetVertices());
 				outputText = "File " + file + ".json loaded.";
 			}
 			else
 				outputText = "File " + file + ".json failed to load.";
 		}
+
+		ImGui::Text("Mesh Statistics");
 
 		if (ImGui::Button("Average Area"))
 		{

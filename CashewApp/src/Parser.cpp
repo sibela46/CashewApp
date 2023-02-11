@@ -43,6 +43,8 @@ bool Parser::ParseFile(const char* fileName)
 	// Close the file
 	fclose(fp);
 
+	mat4 rotateX = mat4::RotateX(-90.f);
+
 	if (doc.HasMember("geometry_object") && doc["geometry_object"].IsObject())
 	{
 		// Fill vertices
@@ -57,11 +59,10 @@ bool Parser::ParseFile(const char* fileName)
 					float x = verticesData[i].GetFloat();
 					float y = verticesData[i + 1].GetFloat();
 					float z = verticesData[i + 2].GetFloat();
-					m_vertices.push_back(Vertex(x, y, z));
+					m_vertices.push_back(float3(x, y, z));
 				}
 			}
 		}
-
 
 		// Fill triangles
 		if (geometryObject.HasMember("triangles") && geometryObject["triangles"].IsArray())
@@ -81,30 +82,28 @@ bool Parser::ParseFile(const char* fileName)
 					Vertex& vertex1 = m_vertices[vertex1Idx];
 					Vertex& vertex2 = m_vertices[vertex2Idx];
 
-					float3 v0 = vertex0.GetPosition();
-					float3 v1 = vertex1.GetPosition();
-					float3 v2 = vertex2.GetPosition();
-
-					float3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
-
-					m_triangles.push_back(Triangle(triangleIdx, v0, v1, v2, normal));
-					
-					// Find centre of current triangle
-					float3 centroid = (v0 + v1 + v2) * 0.333f;
-
-					// Find median of one triangle edge
-					float3 edgeMedian = (v1 - v0) / 2;
-
-					// Split triangle into four smaller ones
-					m_quadingles.push_back(Triangle(triangleIdx, v0, edgeMedian, centroid, normal));
-					m_quadingles.push_back(Triangle(triangleIdx +1, edgeMedian, v1, centroid, normal));
-					m_quadingles.push_back(Triangle(triangleIdx +2, v0, v2, centroid, normal));
-					m_quadingles.push_back(Triangle(triangleIdx +3,v1, v2, centroid, normal));
+					float3 v0 = vertex0.GetPosition() * rotateX;
+					float3 v1 = vertex1.GetPosition() * rotateX;
+					float3 v2 = vertex2.GetPosition() * rotateX;
 
 					// Add face index to each of each vertices' struct (for calculating smooth normals after that)
 					vertex0.AddFace(triangleIdx);
 					vertex1.AddFace(triangleIdx);
 					vertex2.AddFace(triangleIdx);
+
+					float3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
+
+					Triangle newTriangle = Triangle(triangleIdx, v0, v1, v2, vertex0Idx, vertex1Idx, vertex2Idx, normal);
+					m_triangles.push_back(newTriangle);
+					
+					// Find median of one triangle edge
+					float3 edgeMedian = (v1 - v0) / 2;
+
+					// Split triangle into four smaller ones
+					m_quadingles.push_back(Triangle(triangleIdx, v0, edgeMedian, newTriangle.centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +1, edgeMedian, v1, newTriangle.centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +2, v0, v2, newTriangle.centroid, normal));
+					m_quadingles.push_back(Triangle(triangleIdx +3, v1, v2, newTriangle.centroid, normal));
 
 					// Calculate edges for fast closed mesh calculation
 					Edge edge = Edge(vertex0Idx, vertex1Idx);
@@ -143,7 +142,6 @@ bool Parser::ParseFile(const char* fileName)
 					else if (itEdgeSwap != m_edges.end())
 						itEdgeSwap->second.push_back(triangleIdx);
 						
-
 					// Keep track of current triangle idx
 					triangleIdx++;
 				}
@@ -159,6 +157,11 @@ const std::vector<Triangle>& Parser::GetTriangles() const
 	return m_triangles;
 }
 
+const std::vector<Vertex>& Parser::GetVertices() const
+{
+	return m_vertices;
+}
+
 void Parser::CalculateVertexNormals()
 {
 	for (Vertex& vertex : m_vertices)
@@ -169,8 +172,19 @@ void Parser::CalculateVertexNormals()
 			averageNormal += m_triangles[faceIdx].normal;
 		}
 		averageNormal /= (int)vertex.faces.size();
-		vertex.vn = averageNormal;
+		vertex.normal = averageNormal;
 	}
+}
+
+float Parser::CalculateArea(const Triangle& triangle) const
+{
+	float3 v0 = triangle.verticesPos[0];
+	float3 v1 = triangle.verticesPos[1];
+	float3 v2 = triangle.verticesPos[2];
+	float a = length(v2 - v0);
+	float b = length(v1 - v0);
+	float c = length(v2 - v1);
+	return Area(a, b, c);
 }
 
 void Parser::CalculateSmallestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& minArea) const
@@ -178,10 +192,7 @@ void Parser::CalculateSmallestTriangleArea(const std::vector<Triangle>& triangle
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		float a = length(triangle.vertex2 - triangle.vertex0);
-		float b = length(triangle.vertex1 - triangle.vertex0);
-		float c = length(triangle.vertex2 - triangle.vertex1);
-		float area = Area(a, b, c);
+		float area = CalculateArea(triangle);
 		if (area > 0 && area < minArea)
 		{
 			std::lock_guard<std::mutex> lock(mtx);
@@ -196,10 +207,7 @@ void Parser::CalculateLargestTriangleArea(const std::vector<Triangle>& triangles
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		float a = length(triangle.vertex2 - triangle.vertex0);
-		float b = length(triangle.vertex1 - triangle.vertex0);
-		float c = length(triangle.vertex2 - triangle.vertex1);
-		float area = Area(a, b, c);
+		float area = CalculateArea(triangle);
 		if (area > 0 && area > maxArea)
 		{
 			std::lock_guard<std::mutex> lock(mtx);
@@ -214,12 +222,8 @@ void Parser::CalculateAverageTriangleArea(const std::vector<Triangle>& triangles
 	for (int i = startIdx; i < endIdx; i++)
 	{
 		const Triangle& triangle = triangles[i];
-		float a = length(triangle.vertex2 - triangle.vertex0);
-		float b = length(triangle.vertex1 - triangle.vertex0);
-		float c = length(triangle.vertex2 - triangle.vertex1);
-
 		std::lock_guard<std::mutex> lock(mtx);
-		areaSum += Area(a, b, c);
+		areaSum += CalculateArea(triangle);
 	}
 }
 

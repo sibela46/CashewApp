@@ -11,6 +11,8 @@ public:
 
 	void CalculateVertexNormals();
 
+	float CalculateArea(const Triangle& triangle) const;
+
 	void CalculateSmallestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& minArea) const;
 	void CalculateLargestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& maxArea) const;
 	void CalculateAverageTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, float& areaSum) const;
@@ -26,6 +28,7 @@ public:
 	bool IsClosedMesh() const;
 
 	const std::vector<Triangle>& GetTriangles() const;
+	const std::vector<Vertex>& GetVertices() const;
 
 private:
 	std::vector<Triangle> m_triangles;

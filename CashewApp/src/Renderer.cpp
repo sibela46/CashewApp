@@ -5,6 +5,7 @@
 Renderer::Renderer()
 {
 	m_Scene = std::make_shared<Scene>();
+	m_cameraPos = float3(0.f, 1.f, -2.f);
 }
 
 void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -27,53 +28,30 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 
 void Renderer::Render()
 {
+	if (!m_FinalImageData) return;
+
 	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
 	{
 		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 		{
 			glm::vec2 coord = { (float)x / (float)m_FinalImage->GetWidth(), (float)y / (float)m_FinalImage->GetWidth() };
 			coord = coord * 2.0f - 1.0f; // -1 -> 1
-			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = Trace(coord);
+			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = ConvertToRGBA(Trace(coord));
 		}
 	}
 
 	m_FinalImage->SetData(m_FinalImageData);
 }
 
-uint32_t Renderer::PerPixel(glm::vec2 coord)
+float3 Renderer::Trace(glm::vec2 coord)
 {
-	uint8_t r = (uint8_t)(coord.x * 255.f);
-	uint8_t g = (uint8_t)(coord.y * 255.f);
-	
-	glm::vec3 rayOrigin(0.f, 0.f, -2.f);
-	glm::vec3 rayDirection(coord.x, coord.y, 1.0f);
-	float radius = 0.5f;
-
-	//normalize
-	float a = rayDirection.x * rayDirection.x + rayDirection.y * rayDirection.y + rayDirection.z * rayDirection.z;
-	float b = 2.0f * glm::dot(rayOrigin, rayDirection);
-	float c = glm::dot(rayOrigin, rayOrigin) - radius * radius;
-	
-	float discriminant = b * b - 4.f * a * c;
-
-	if (discriminant >= 0.f)
-	{
-		return 0xffff0000;
-	}
-
-	return 0xff000000;
-}
-
-uint32_t Renderer::Trace(glm::vec2 coord)
-{
-	float3 rayOrigin = float3(0.f, 0.f, -2.f);
 	float3 rayDirection = float3(coord.x, coord.y, 1.f);
-	Ray ray = Ray(rayOrigin, rayDirection);
+	Ray ray = Ray(m_cameraPos, rayDirection);
 
 	m_Scene.get()->FindNearest(ray);
 
-	if (ray.hitObjIdx == -1) return 0xff000000;
-	return 0xffff0000;
+	if (ray.hitObjIdx == -1) return float3(0);
+	return m_Scene->GetShading(ray);
 }
 
 bool Renderer::IsPointInside(float3 point) const
