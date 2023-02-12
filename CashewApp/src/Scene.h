@@ -14,6 +14,7 @@ public:
 	glm::vec3 GetShading(const Ray& ray);
 
 	glm::vec3& GetLightPos() { return m_lightPos; };
+	float& GetLightIntensity() { return m_lightIntensity; };
 	bool& GetSmoothShading() { return m_smoothShading; };
 
 private:
@@ -21,5 +22,6 @@ private:
 	std::vector<Triangle> m_triangles;
 	std::vector<Vertex> m_vertices;
 	glm::vec3 m_lightPos;
+	float m_lightIntensity = 2.f;
 	bool m_smoothShading = false;
 };

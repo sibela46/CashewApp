@@ -5,7 +5,7 @@
 Renderer::Renderer()
 {
 	m_Scene = std::make_shared<Scene>();
-	m_cameraPos = glm::vec3(0.f, 1.f, -2.f);
+	m_cameraPos = glm::vec3(0.f, 1.f, -3.f);
 }
 
 void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -26,48 +26,47 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	m_FinalImageData = new uint32_t[width * height];
 }
 
-void Renderer::Render()
+void Renderer::Render(const Camera& camera, Scene& scene)
 {
+	Ray ray = Ray();
+	ray.O = camera.GetPosition();
 	if (!m_FinalImageData) return;
 
 	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
 	{
 		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
 		{
-			glm::vec2 coord = { (float)x / (float)m_FinalImage->GetWidth(), (float)y / (float)m_FinalImage->GetWidth() };
-			coord = coord * 2.0f - 1.0f; // -1 -> 1
-			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = ConvertToRGBA(Trace(coord));
+			Ray ray (camera.GetPosition(), camera.GetRayDirections()[x + y * m_FinalImage->GetWidth()]);
+			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = ConvertToRGBA(Trace(ray, scene));
 		}
 	}
 
 	m_FinalImage->SetData(m_FinalImageData);
 }
 
-glm::vec3 Renderer::Trace(glm::vec2 coord)
+glm::vec3 Renderer::Trace(Ray& ray, Scene& scene)
 {
-	glm::vec3 rayDirection = glm::vec3(coord.x, coord.y, 1.f);
-	Ray ray = Ray(m_cameraPos, rayDirection);
-
-	m_Scene.get()->FindNearest(ray);
+	scene.FindNearest(ray);
 
 	if (ray.hitObjIdx == -1) return glm::vec3(0);
-	return m_Scene->GetShading(ray);
+	return scene.GetShading(ray);
 }
 
-bool Renderer::IsPointInside(glm::vec3 point) const
+bool Renderer::IsPointInside(glm::vec3 point, Scene& scene) const
 {
-	// Shoot ray from query point in positive z-axis
-	glm::vec3 direction = glm::vec3(0.f, 0.f, 1.f);
+	// Shoot ray from query point in negative z-axis
+	glm::vec3 direction = glm::vec3(0.f, 0.f, -1.f);
 	Ray ray(point, direction);
 
-	m_Scene->FindNearest(ray);
+	scene.FindNearest(ray);
 
 	// If we don't hit anything, it lies ouside
 	if (ray.hitObjIdx == -1) return false;
 
 	// Shoot a second ray from intersection point
-	glm::vec3 hitPoint = ray.GetIntersectionPoint();
-	ray = Ray(hitPoint, direction);
+	ray = Ray(ray.GetIntersectionPoint(), direction);
+
+	scene.FindNearest(ray);
 
 	// If we don't hit anything, the query point was inside
 	if (ray.hitObjIdx == -1) return true;

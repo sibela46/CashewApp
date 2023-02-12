@@ -40,7 +40,7 @@ inline float Area(float a, float b, float c)
 class Ray
 {
 public:
-	Ray() = default;
+	Ray() : t(1e34f), hitObjIdx(-1) {};
 	Ray(glm::vec3 O, glm::vec3 D) : O(O), D(D), t(1e34f), hitObjIdx(-1) {};
 
 public:
@@ -80,11 +80,11 @@ struct Triangle
 	std::vector<glm::vec3> verticesPos;
 	std::vector<int> verIndices;
 	glm::vec3 normal, centroid;
-	ShadingInfo shadingInfo;
+	glm::vec3 colour;
 
 	Triangle() = default;
-	Triangle(int id, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, int vIdx1, int vIdx2, int vIdx3, glm::vec3 n)
-		: id(id), normal(n)
+	Triangle(int id, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, int vIdx1, int vIdx2, int vIdx3, glm::vec3 n, glm::vec3 colour)
+		: id(id), normal(n), colour(colour)
 	{
 		verIndices.reserve(3);
 		verIndices.push_back(vIdx1);
@@ -95,7 +95,6 @@ struct Triangle
 		verticesPos.push_back(v1);
 		verticesPos.push_back(v2);
 		centroid = (v0 + v1 + v2) * 0.333f;
-		shadingInfo = ShadingInfo(glm::vec3(1.f, 0.f, 1.f));
 	};
 	Triangle(int id, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 n)
 		: id(id), normal(n)
@@ -184,5 +183,6 @@ public:
 
 #include "Parser.h"
 #include "Renderer.h"
+#include "Camera.h"
 #include "Scene.h"
 #include "Bvh.h"

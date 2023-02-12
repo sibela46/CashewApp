@@ -7,11 +7,11 @@ Parser::Parser()
 
 }
 
-bool Parser::ParseFile(const char* fileName)
+bool Parser::ParseFile(const char* fileName, float scale, glm::vec3 colour)
 {
 	m_triangles.clear();
 	m_vertices.clear();
-	//m_edges.clear();
+	m_edges.clear();
 	m_quadingles.clear();
 
 	// Open the file
@@ -44,6 +44,7 @@ bool Parser::ParseFile(const char* fileName)
 	fclose(fp);
 
 	glm::mat4 rotateX = glm::mat4(1.0f);
+	rotateX = glm::scale(rotateX, glm::vec3(scale));
 	rotateX = glm::rotate(rotateX, PI / 2, glm::vec3(1, 0, 0));
 
 	if (doc.HasMember("geometry_object") && doc["geometry_object"].IsObject())
@@ -94,7 +95,7 @@ bool Parser::ParseFile(const char* fileName)
 
 					glm::vec3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
 
-					Triangle newTriangle = Triangle(triangleIdx, v0, v1, v2, vertex0Idx, vertex1Idx, vertex2Idx, normal);
+					Triangle newTriangle = Triangle(triangleIdx, v0, v1, v2, vertex0Idx, vertex1Idx, vertex2Idx, normal, colour);
 					m_triangles.push_back(newTriangle);
 					
 					// Find median of one triangle edge
@@ -107,7 +108,7 @@ bool Parser::ParseFile(const char* fileName)
 					m_quadingles.push_back(Triangle(triangleIdx +3, v1, v2, newTriangle.centroid, normal));
 
 					// Calculate edges for fast closed mesh calculation
-					/*Edge edge = Edge(vertex0Idx, vertex1Idx);
+					Edge edge = Edge(vertex0Idx, vertex1Idx);
 					Edge edgeSwap = Edge(vertex1Idx, vertex0Idx);
 					auto itEdge = m_edges.find(edge);
 					auto itEdgeSwap = m_edges.find(edgeSwap);
@@ -141,7 +142,7 @@ bool Parser::ParseFile(const char* fileName)
 					else if (itEdge != m_edges.end())
 						itEdge->second.push_back(triangleIdx);
 					else if (itEdgeSwap != m_edges.end())
-						itEdgeSwap->second.push_back(triangleIdx);*/
+						itEdgeSwap->second.push_back(triangleIdx);
 						
 					// Keep track of current triangle idx
 					triangleIdx++;
@@ -390,11 +391,11 @@ void Parser::CalculateAverageAreaCompared() const
 
 bool Parser::IsClosedMesh() const
 {
-	/*for (auto& edge : m_edges)
+	for (auto& edge : m_edges)
 	{
 		if (edge.second.size() < 2)
 			return false;
-	}*/
+	}
 	return true;
 }
 

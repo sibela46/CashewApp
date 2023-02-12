@@ -18,6 +18,7 @@ void Bvh::BuildBVH(std::vector<Triangle> triangles)
     BVHNode& root = m_BvhNodes[m_rootNodeIdx];
     root.leftFirst = 0;
     root.triCount = N;
+    nodesUsed = 1;
     UpdateNodeBounds(m_rootNodeIdx);
 
     // Subdivide recursively

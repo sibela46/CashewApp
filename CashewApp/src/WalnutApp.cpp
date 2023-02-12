@@ -11,24 +11,21 @@ using namespace Walnut;
 class ExampleLayer : public Walnut::Layer
 {
 public:
+	ExampleLayer() : m_Camera(45.0f, 0.1f, 100.f) {}
 	virtual void OnUpdate(float ts) override
 	{
-		/*if (GetKeyState('S') & 0x8000)
-		{
-			m_Renderer.TranslateCamera(glm::vec3(0.f, 0.f, -0.5f));
-		}*/
+		m_Camera.OnUpdate(ts);
 	}
 
 	virtual void OnUIRender() override
 	{
-		auto scene = m_Renderer.GetScene();
-
 		ImGui::Begin("Settings");
 
 		ImGui::Text("Render Settings");
 
-		ImGui::Checkbox("Smooth Shading", &scene->GetSmoothShading());
+		ImGui::Checkbox("Smooth Shading", &m_Scene.GetSmoothShading());
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
+		ImGui::Checkbox("Interactive", &m_interactive);
 		if (ImGui::Button("Render"))
 		{
 			Render();
@@ -41,19 +38,12 @@ public:
 
 		ImGui::Separator();
 
-		ImGui::Text("Camera Settings");
-
-		ImGui::DragFloat("Camera X", &m_Renderer.GetCameraPos().x, 0.1f);
-		ImGui::DragFloat("Camera Y", &m_Renderer.GetCameraPos().y, 0.1f);
-		ImGui::DragFloat("Camera Z", &m_Renderer.GetCameraPos().z, 0.1f);
-
-		ImGui::Separator();
-
 		ImGui::Text("Light Settings");
 
-		ImGui::DragFloat("Light X", &m_Renderer.GetScene()->GetLightPos().x, 0.1f);
-		ImGui::DragFloat("Light Y", &m_Renderer.GetScene()->GetLightPos().y, 0.1f);
-		ImGui::DragFloat("Light Z", &m_Renderer.GetScene()->GetLightPos().z, 0.1f);
+		ImGui::DragFloat("Light X", &m_Scene.GetLightPos().x, 0.1f);
+		ImGui::DragFloat("Light Y", &m_Scene.GetLightPos().y, 0.1f);
+		ImGui::DragFloat("Light Z", &m_Scene.GetLightPos().z, 0.1f);
+		ImGui::DragFloat("Intensity", &m_Scene.GetLightIntensity(), 0.1f);
 
 		ImGui::End();
 
@@ -72,54 +62,69 @@ public:
 
 		ImGui::End();
 		ImGui::PopStyleVar();
+
+		if (m_interactive)
+		{
+			Render();
+		}
 	}
 	void RenderJSONStatsFields()
 	{
-		ImGui::Text("Mesh Statistics");
+		ImGui::Text("Load model");
 
 		static char jsonFileBuffer[128];
 		ImGui::InputText("JSON File Name", jsonFileBuffer, IM_ARRAYSIZE(jsonFileBuffer));
+		ImGui::InputFloat("Scale", &m_scale);
+		ImGui::InputFloat("R", &m_colour.x);
+		ImGui::InputFloat("G", &m_colour.y);
+		ImGui::InputFloat("B", &m_colour.z);
 		if (ImGui::Button("Load"))
 		{
 			std::string file(jsonFileBuffer);
 			std::string path = "./data/";
 			std::string jsonExt = ".json";
-			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str()))
+			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str(), m_scale, m_colour/255.f))
 			{
 				m_Parser.CalculateVertexNormals();
-				m_Renderer.GetScene()->LoadModelToScene(m_Parser.GetTriangles(), m_Parser.GetVertices());
-				m_outputText = "File " + file + ".json loaded.";
+				m_Scene.LoadModelToScene(m_Parser.GetTriangles(), m_Parser.GetVertices());
+				m_loadOutputText = "File " + file + ".json loaded.";
 				m_error = false;
 			}
 			else
 			{
 				m_error = true;
-				m_outputText = "File " + file + ".json failed to load.";
+				m_loadOutputText = "File " + file + ".json failed to load.";
 			}
 		}
+
+		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_loadOutputText.c_str());
+
+		ImGui::Separator();
+		ImGui::Spacing();
+		ImGui::Text("Mesh Statistics");
 
 		if (ImGui::Button("Average Area"))
 		{
 			float area = m_Parser.CalculateAverageAreaMultithreaded();
-			m_outputText = "Average triangle area for loaded file is " + std::to_string(area);
+			m_statsOutputText = "Average triangle area for loaded file is " + std::to_string(area);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Smallest Area"))
 		{
 			float area = m_Parser.CalculateSmallestAreaMultithreaded();
-			m_outputText = "Smallest triangle area for loaded file is " + std::to_string(area);
+			m_statsOutputText = "Smallest triangle area for loaded file is " + std::to_string(area);
 		}
 
 		if (ImGui::Button("Largest Area"))
 		{
 			float area = m_Parser.CalculateLargestAreaMultithreaded();
-			m_outputText = "Largesst triangle area for loaded file is " + std::to_string(area);
+			m_statsOutputText = "Largest triangle area for loaded file is " + std::to_string(area);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Closed Mesh"))
 		{
 			bool closed = m_Parser.IsClosedMesh();
-			m_outputText = closed ? "True" : "False";
+			m_statsOutputText = closed ? "True" : "False";
 		}
 
 		ImGui::InputFloat("Query point X", &m_queryPoint.x);
@@ -128,30 +133,32 @@ public:
 
 		if (ImGui::Button("Check inside"))
 		{
-			bool inside = m_Renderer.IsPointInside(m_queryPoint);
-			m_outputText = inside ? "Point is inside loaded mesh." : "Point is outside loaded mesh.";
+			bool inside = m_Renderer.IsPointInside(m_queryPoint, m_Scene);
+			m_statsOutputText = inside ? "Point is inside loaded mesh." : "Point is outside loaded mesh.";
 		}
 
-		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_outputText.c_str());
+		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_statsOutputText.c_str());
 	}
 	void Render()
 	{
 		Timer timer;
 
 		m_Renderer.OnResize(m_ViewportWidth, m_ViewportHeight);
-		m_Renderer.Render();
+		m_Camera.OnResize(m_ViewportWidth, m_ViewportHeight);
+		m_Renderer.Render(m_Camera, m_Scene);
 
 		m_LastRenderTime = timer.ElapsedMillis();
 	}
 private:
 	Renderer m_Renderer;
+	Camera m_Camera;
+	Scene m_Scene;
 	Parser m_Parser;
-	std::string m_outputText = "";
-	bool m_error = false;
+	std::string m_statsOutputText = "", m_loadOutputText = "";
+	bool m_error = false, m_interactive = false, m_smoothShading = false;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
-	float m_LastRenderTime = 0;
-	bool m_smoothShading;
-	glm::vec3 m_queryPoint = glm::vec3(0);
+	float m_LastRenderTime = 0, m_scale = 1.f;
+	glm::vec3 m_queryPoint = glm::vec3(0), m_colour = glm::vec3(255, 0, 255);
 	std::string fileName = "Type in the JSON file you want to load.";
 };
 

@@ -4,7 +4,7 @@ Scene::Scene()
 {
 	// Initialise all objects in scene
 	m_Bvh = new Bvh();
-	m_lightPos = glm::vec3(0.f, 1.f, 0.f);
+	m_lightPos = glm::vec3(4.f, 2.f, 10.f);
 }
 
 void Scene::LoadModelToScene(const std::vector<Triangle>& triangles, const std::vector<Vertex>& vertices)
@@ -41,11 +41,10 @@ glm::vec3 Scene::ComputeShadingNormal(int triIdx, float u, float v)
 
 glm::vec3 Scene::GetShading(const Ray& ray)
 {
-	ShadingInfo shadingInfo = m_triangles[ray.hitObjIdx].shadingInfo;
+	ShadingInfo shadingInfo = m_triangles[ray.hitObjIdx].colour;
 	glm::vec3 I = ray.O + ray.t * ray.D;
 	glm::vec3 dirToLight = (m_lightPos - I);
 	glm::vec3 N = m_smoothShading ? ComputeShadingNormal(ray.hitObjIdx, ray.u, ray.v) : ray.faceNormal;
 	float dotProduct = std::max(0.f, glm::dot(glm::normalize(dirToLight), N));
-	float attenuation = 1 / length(dirToLight);
-	return shadingInfo.albedo * dotProduct * attenuation;
+	return shadingInfo.albedo * dotProduct * (1/PI) * m_lightIntensity;
 }
