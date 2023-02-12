@@ -5,7 +5,7 @@
 Renderer::Renderer()
 {
 	m_Scene = std::make_shared<Scene>();
-	m_cameraPos = float3(0.f, 1.f, -2.f);
+	m_cameraPos = glm::vec3(0.f, 1.f, -2.f);
 }
 
 void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -43,21 +43,21 @@ void Renderer::Render()
 	m_FinalImage->SetData(m_FinalImageData);
 }
 
-float3 Renderer::Trace(glm::vec2 coord)
+glm::vec3 Renderer::Trace(glm::vec2 coord)
 {
-	float3 rayDirection = float3(coord.x, coord.y, 1.f);
+	glm::vec3 rayDirection = glm::vec3(coord.x, coord.y, 1.f);
 	Ray ray = Ray(m_cameraPos, rayDirection);
 
 	m_Scene.get()->FindNearest(ray);
 
-	if (ray.hitObjIdx == -1) return float3(0);
+	if (ray.hitObjIdx == -1) return glm::vec3(0);
 	return m_Scene->GetShading(ray);
 }
 
-bool Renderer::IsPointInside(float3 point) const
+bool Renderer::IsPointInside(glm::vec3 point) const
 {
 	// Shoot ray from query point in positive z-axis
-	float3 direction = float3(0.f, 0.f, 1.f);
+	glm::vec3 direction = glm::vec3(0.f, 0.f, 1.f);
 	Ray ray(point, direction);
 
 	m_Scene->FindNearest(ray);
@@ -66,7 +66,7 @@ bool Renderer::IsPointInside(float3 point) const
 	if (ray.hitObjIdx == -1) return false;
 
 	// Shoot a second ray from intersection point
-	float3 hitPoint = ray.GetIntersectionPoint();
+	glm::vec3 hitPoint = ray.GetIntersectionPoint();
 	ray = Ray(hitPoint, direction);
 
 	// If we don't hit anything, the query point was inside

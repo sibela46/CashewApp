@@ -34,5 +34,5 @@ private:
 	std::vector<Triangle> m_triangles;
 	std::vector<Triangle> m_quadingles;
 	std::vector<Vertex> m_vertices;
-	std::map<Edge, std::vector<int>> m_edges;
+	//std::map<Edge, std::vector<int>> m_edges;
 };

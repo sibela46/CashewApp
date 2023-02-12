@@ -30,7 +30,7 @@ void Bvh::Subdivide(int nodeIdx)
     BVHNode& node = m_BvhNodes[nodeIdx];
     if (node.triCount <= 2) return;
     // determine split axis and position
-    float3 extent = node.aabbMax - node.aabbMin;
+    glm::vec3 extent = node.aabbMax - node.aabbMin;
     int axis = 0;
     if (extent.y > extent.x) axis = 1;
     if (extent.z > extent[axis]) axis = 2;
@@ -67,8 +67,8 @@ void Bvh::Subdivide(int nodeIdx)
 void Bvh::UpdateNodeBounds(int nodeIdx)
 {
     BVHNode& node = m_BvhNodes[nodeIdx];
-    node.aabbMin = float3(1e30f);
-    node.aabbMax = float3(-1e30f);
+    node.aabbMin = glm::vec3(1e30f);
+    node.aabbMax = glm::vec3(-1e30f);
     for (int first = node.leftFirst, i = 0; i < node.triCount; i++)
     {
         int leafTriIdx = m_triIndices[first + i];
@@ -98,7 +98,7 @@ void Bvh::IntersectBVH(Ray& ray, const int nodeIdx)
     }
 }
 
-bool Bvh::IntersectAABB(const Ray& ray, const float3 bmin, const float3 bmax)
+bool Bvh::IntersectAABB(const Ray& ray, const glm::vec3 bmin, const glm::vec3 bmax)
 {
     float tx1 = (bmin.x - ray.O.x) / ray.D.x, tx2 = (bmax.x - ray.O.x) / ray.D.x;
     float tmin = std::min(tx1, tx2), tmax = std::max(tx1, tx2);

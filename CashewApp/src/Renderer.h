@@ -17,16 +17,16 @@ public:
 	std::shared_ptr<Walnut::Image> GetFinalImage() const { return m_FinalImage; }
 	std::shared_ptr<Scene> GetScene() const { return m_Scene; }
 
-	bool IsPointInside(float3 point) const;
+	bool IsPointInside(glm::vec3 point) const;
 
-	float3& GetCameraPos() { return m_cameraPos; };
+	glm::vec3& GetCameraPos() { return m_cameraPos; };
 
 private:
-	float3 Trace(glm::vec2 coord);
+	glm::vec3 Trace(glm::vec2 coord);
 
 private:
 	uint32_t* m_FinalImageData;
 	std::shared_ptr<Walnut::Image> m_FinalImage;
 	std::shared_ptr<Scene> m_Scene;
-	float3 m_cameraPos;
+	glm::vec3 m_cameraPos;
 };

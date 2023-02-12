@@ -11,7 +11,7 @@ bool Parser::ParseFile(const char* fileName)
 {
 	m_triangles.clear();
 	m_vertices.clear();
-	m_edges.clear();
+	//m_edges.clear();
 	m_quadingles.clear();
 
 	// Open the file
@@ -43,7 +43,8 @@ bool Parser::ParseFile(const char* fileName)
 	// Close the file
 	fclose(fp);
 
-	mat4 rotateX = mat4::RotateX(-90.f);
+	glm::mat4 rotateX = glm::mat4(1.0f);
+	rotateX = glm::rotate(rotateX, PI / 2, glm::vec3(1, 0, 0));
 
 	if (doc.HasMember("geometry_object") && doc["geometry_object"].IsObject())
 	{
@@ -59,7 +60,7 @@ bool Parser::ParseFile(const char* fileName)
 					float x = verticesData[i].GetFloat();
 					float y = verticesData[i + 1].GetFloat();
 					float z = verticesData[i + 2].GetFloat();
-					m_vertices.push_back(float3(x, y, z));
+					m_vertices.push_back(Vertex(glm::vec3(x, y, z)));
 				}
 			}
 		}
@@ -82,22 +83,22 @@ bool Parser::ParseFile(const char* fileName)
 					Vertex& vertex1 = m_vertices[vertex1Idx];
 					Vertex& vertex2 = m_vertices[vertex2Idx];
 
-					float3 v0 = vertex0.GetPosition() * rotateX;
-					float3 v1 = vertex1.GetPosition() * rotateX;
-					float3 v2 = vertex2.GetPosition() * rotateX;
+					glm::vec3 v0 = glm::vec4(vertex0.GetPosition(), 1.f) * rotateX;
+					glm::vec3 v1 = glm::vec4(vertex1.GetPosition(), 1.f) * rotateX;
+					glm::vec3 v2 = glm::vec4(vertex2.GetPosition(), 1.f) * rotateX;
 
 					// Add face index to each of each vertices' struct (for calculating smooth normals after that)
 					vertex0.AddFace(triangleIdx);
 					vertex1.AddFace(triangleIdx);
 					vertex2.AddFace(triangleIdx);
 
-					float3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
+					glm::vec3 normal = cross(normalize(v2 - v0), normalize(v1 - v0));
 
 					Triangle newTriangle = Triangle(triangleIdx, v0, v1, v2, vertex0Idx, vertex1Idx, vertex2Idx, normal);
 					m_triangles.push_back(newTriangle);
 					
 					// Find median of one triangle edge
-					float3 edgeMedian = (v1 - v0) / 2;
+					glm::vec3 edgeMedian = (v1 - v0) / glm::vec3(2);
 
 					// Split triangle into four smaller ones
 					m_quadingles.push_back(Triangle(triangleIdx, v0, edgeMedian, newTriangle.centroid, normal));
@@ -106,7 +107,7 @@ bool Parser::ParseFile(const char* fileName)
 					m_quadingles.push_back(Triangle(triangleIdx +3, v1, v2, newTriangle.centroid, normal));
 
 					// Calculate edges for fast closed mesh calculation
-					Edge edge = Edge(vertex0Idx, vertex1Idx);
+					/*Edge edge = Edge(vertex0Idx, vertex1Idx);
 					Edge edgeSwap = Edge(vertex1Idx, vertex0Idx);
 					auto itEdge = m_edges.find(edge);
 					auto itEdgeSwap = m_edges.find(edgeSwap);
@@ -140,7 +141,7 @@ bool Parser::ParseFile(const char* fileName)
 					else if (itEdge != m_edges.end())
 						itEdge->second.push_back(triangleIdx);
 					else if (itEdgeSwap != m_edges.end())
-						itEdgeSwap->second.push_back(triangleIdx);
+						itEdgeSwap->second.push_back(triangleIdx);*/
 						
 					// Keep track of current triangle idx
 					triangleIdx++;
@@ -166,7 +167,7 @@ void Parser::CalculateVertexNormals()
 {
 	for (Vertex& vertex : m_vertices)
 	{
-		float3 averageNormal = float3(0);
+		glm::vec3 averageNormal = glm::vec3(0);
 		for (int faceIdx : vertex.faces)
 		{
 			averageNormal += m_triangles[faceIdx].normal;
@@ -178,9 +179,9 @@ void Parser::CalculateVertexNormals()
 
 float Parser::CalculateArea(const Triangle& triangle) const
 {
-	float3 v0 = triangle.verticesPos[0];
-	float3 v1 = triangle.verticesPos[1];
-	float3 v2 = triangle.verticesPos[2];
+	glm::vec3 v0 = triangle.verticesPos[0];
+	glm::vec3 v1 = triangle.verticesPos[1];
+	glm::vec3 v2 = triangle.verticesPos[2];
 	float a = length(v2 - v0);
 	float b = length(v1 - v0);
 	float c = length(v2 - v1);
@@ -389,11 +390,11 @@ void Parser::CalculateAverageAreaCompared() const
 
 bool Parser::IsClosedMesh() const
 {
-	for (auto& edge : m_edges)
+	/*for (auto& edge : m_edges)
 	{
 		if (edge.second.size() < 2)
 			return false;
-	}
+	}*/
 	return true;
 }
 

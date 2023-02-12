@@ -15,7 +15,7 @@ public:
 	{
 		/*if (GetKeyState('S') & 0x8000)
 		{
-			m_Renderer.TranslateCamera(float3(0.f, 0.f, -0.5f));
+			m_Renderer.TranslateCamera(glm::vec3(0.f, 0.f, -0.5f));
 		}*/
 	}
 
@@ -151,7 +151,7 @@ private:
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0;
 	bool m_smoothShading;
-	float3 m_queryPoint = float3(0);
+	glm::vec3 m_queryPoint = glm::vec3(0);
 	std::string fileName = "Type in the JSON file you want to load.";
 };
 

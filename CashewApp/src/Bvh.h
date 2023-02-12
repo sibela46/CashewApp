@@ -4,7 +4,7 @@
 // 32-bytes BVHNode, half a cache line - pure beauty
 struct BVHNode
 {
-    float3 aabbMin, aabbMax;
+    glm::vec3 aabbMin, aabbMax;
     int leftFirst, triCount;
     bool isLeaf() { return triCount > 0; };
 };
@@ -22,7 +22,7 @@ public:
     void UpdateNodeBounds(int nodeIdx);
 
     void IntersectBVH(Ray& ray, const int nodeIdx);
-    bool IntersectAABB(const Ray& ray, const float3 bmin, const float3 bmax);
+    bool IntersectAABB(const Ray& ray, const glm::vec3 bmin, const glm::vec3 bmax);
 
 private:
     int N = 0;
