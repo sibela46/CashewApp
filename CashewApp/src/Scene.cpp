@@ -25,21 +25,21 @@ void Scene::LoadModelToScene(const std::vector<Triangle>& triangles, const std::
 	m_Bvh->BuildBVH(m_triangles);
 }
 
-void Scene::FindNearest(Ray& ray)
+void Scene::FindNearest(Ray& ray) const
 {
 	if (m_triangles.empty()) return;
 
 	m_Bvh->IntersectBVH(ray, 0);
 }
 
-glm::vec3 Scene::ComputeShadingNormal(int triIdx, float u, float v)
+glm::vec3 Scene::ComputeShadingNormal(int triIdx, float u, float v) const
 {
-	Triangle& triangle = m_triangles[triIdx];
+	const Triangle& triangle = m_triangles[triIdx];
 
 	return glm::vec3((1 - u - v) * m_vertices[triangle.verIndices[0]].normal + u * m_vertices[triangle.verIndices[1]].normal + v * m_vertices[triangle.verIndices[2]].normal);
 }
 
-glm::vec3 Scene::GetShading(const Ray& ray)
+glm::vec3 Scene::GetShading(const Ray& ray) const
 {
 	ShadingInfo shadingInfo = m_triangles[ray.hitObjIdx].colour;
 	glm::vec3 I = ray.O + ray.t * ray.D;

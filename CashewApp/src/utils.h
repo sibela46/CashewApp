@@ -15,6 +15,8 @@
 #define EPSILON			0.0000001
 #define PI				3.14159265358979323846264f
 
+#define MULTI_THREADING 1
+
 // Colours
 inline uint32_t ConvertToRGBA(const glm::vec3& colour)
 {

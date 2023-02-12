@@ -8,10 +8,10 @@ public:
 	Scene();
 
 	void LoadModelToScene(const std::vector<Triangle>& triangles, const std::vector<Vertex>& vertices);
-	void FindNearest(Ray& ray);
+	void FindNearest(Ray& ray) const;
 
-	glm::vec3 ComputeShadingNormal(int triIdx, float u, float v);
-	glm::vec3 GetShading(const Ray& ray);
+	glm::vec3 ComputeShadingNormal(int triIdx, float u, float v) const;
+	glm::vec3 GetShading(const Ray& ray) const;
 
 	glm::vec3& GetLightPos() { return m_lightPos; };
 	float& GetLightIntensity() { return m_lightIntensity; };
