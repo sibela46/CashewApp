@@ -14,6 +14,7 @@ public:
 	float3 GetShading(const Ray& ray);
 
 	float3& GetLightPos() { return m_lightPos; };
+	bool& GetSmoothShading() { return m_smoothShading; };
 
 private:
 	bool IsOccluded(const Ray& ray);
@@ -23,4 +24,5 @@ private:
 	std::vector<Triangle> m_triangles;
 	std::vector<Vertex> m_vertices;
 	float3 m_lightPos;
+	bool m_smoothShading = false;
 };

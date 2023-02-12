@@ -21,21 +21,33 @@ public:
 
 	virtual void OnUIRender() override
 	{
+		auto scene = m_Renderer.GetScene();
+
 		ImGui::Begin("Settings");
 
+		ImGui::Text("Render Settings");
+
+		ImGui::Checkbox("Smooth Shading", &scene->GetSmoothShading());
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
 		if (ImGui::Button("Render"))
 		{
 			Render();
 		}
 		
+		ImGui::Separator();
+		ImGui::Spacing();
+
 		RenderJSONStatsFields();
+
+		ImGui::Separator();
 
 		ImGui::Text("Camera Settings");
 
 		ImGui::DragFloat("Camera X", &m_Renderer.GetCameraPos().x, 0.1f);
 		ImGui::DragFloat("Camera Y", &m_Renderer.GetCameraPos().y, 0.1f);
 		ImGui::DragFloat("Camera Z", &m_Renderer.GetCameraPos().z, 0.1f);
+
+		ImGui::Separator();
 
 		ImGui::Text("Light Settings");
 
@@ -63,6 +75,8 @@ public:
 	}
 	void RenderJSONStatsFields()
 	{
+		ImGui::Text("Mesh Statistics");
+
 		static char jsonFileBuffer[128];
 		ImGui::InputText("JSON File Name", jsonFileBuffer, IM_ARRAYSIZE(jsonFileBuffer));
 		if (ImGui::Button("Load"))
@@ -74,46 +88,51 @@ public:
 			{
 				m_Parser.CalculateVertexNormals();
 				m_Renderer.GetScene()->LoadModelToScene(m_Parser.GetTriangles(), m_Parser.GetVertices());
-				outputText = "File " + file + ".json loaded.";
+				m_outputText = "File " + file + ".json loaded.";
+				m_error = false;
 			}
 			else
-				outputText = "File " + file + ".json failed to load.";
+			{
+				m_error = true;
+				m_outputText = "File " + file + ".json failed to load.";
+			}
 		}
-
-		ImGui::Text("Mesh Statistics");
 
 		if (ImGui::Button("Average Area"))
 		{
 			float area = m_Parser.CalculateAverageAreaMultithreaded();
-			outputText = "Average triangle area for loaded file is " + std::to_string(area);
+			m_outputText = "Average triangle area for loaded file is " + std::to_string(area);
 		}
+		ImGui::SameLine();
 		if (ImGui::Button("Smallest Area"))
 		{
 			float area = m_Parser.CalculateSmallestAreaMultithreaded();
-			outputText = "Smallest triangle area for loaded file is " + std::to_string(area);
+			m_outputText = "Smallest triangle area for loaded file is " + std::to_string(area);
 		}
+
 		if (ImGui::Button("Largest Area"))
 		{
 			float area = m_Parser.CalculateLargestAreaMultithreaded();
-			outputText = "Largesst triangle area for loaded file is " + std::to_string(area);
+			m_outputText = "Largesst triangle area for loaded file is " + std::to_string(area);
 		}
+		ImGui::SameLine();
 		if (ImGui::Button("Closed Mesh"))
 		{
 			bool closed = m_Parser.IsClosedMesh();
-			outputText = closed ? "True" : "False";
+			m_outputText = closed ? "True" : "False";
 		}
 
-		ImGui::InputFloat("Query point X:", &queryPoint.x);
-		ImGui::InputFloat("Query point Y:", &queryPoint.y);
-		ImGui::InputFloat("Query point Z:", &queryPoint.z);
+		ImGui::InputFloat("Query point X", &m_queryPoint.x);
+		ImGui::InputFloat("Query point Y", &m_queryPoint.y);
+		ImGui::InputFloat("Query point Z", &m_queryPoint.z);
 
 		if (ImGui::Button("Check inside"))
 		{
-			bool inside = m_Renderer.IsPointInside(queryPoint);
-			outputText = inside ? "Point is inside loaded mesh." : "Point is outside loaded mesh.";
+			bool inside = m_Renderer.IsPointInside(m_queryPoint);
+			m_outputText = inside ? "Point is inside loaded mesh." : "Point is outside loaded mesh.";
 		}
 
-		ImGui::Text(outputText.c_str());
+		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_outputText.c_str());
 	}
 	void Render()
 	{
@@ -127,10 +146,12 @@ public:
 private:
 	Renderer m_Renderer;
 	Parser m_Parser;
-	std::string outputText = "";
+	std::string m_outputText = "";
+	bool m_error = false;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0;
-	float3 queryPoint = float3(0);
+	bool m_smoothShading;
+	float3 m_queryPoint = float3(0);
 	std::string fileName = "Type in the JSON file you want to load.";
 };
 

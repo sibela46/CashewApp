@@ -50,8 +50,8 @@ float3 Scene::GetShading(const Ray& ray)
 	if (IsOccluded(ray)) return 0;
 	float3 I = ray.O + ray.t * ray.D;
 	float3 dirToLight = (m_lightPos - I);
-	float3 N = ComputeShadingNormal(ray.hitObjIdx, ray.u, ray.v);
+	float3 N = m_smoothShading ? ComputeShadingNormal(ray.hitObjIdx, ray.u, ray.v) : ray.faceNormal;
 	float dotProduct = std::max(0.f, dot(normalize(dirToLight), N));
 	float attenuation = 1 / length(dirToLight);
-	return shadingInfo.albedo * dotProduct* (1 / PI);
+	return shadingInfo.albedo * dotProduct * attenuation;
 }

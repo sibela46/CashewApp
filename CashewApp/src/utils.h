@@ -113,6 +113,7 @@ public:
 
 public:
 	float3 O, D;
+	float3 faceNormal;
 	float t, u, v;
 	int hitObjIdx;
 };
@@ -194,6 +195,7 @@ struct Triangle
 			ray.hitObjIdx = id;
 			ray.u = u;
 			ray.v = v;
+			ray.faceNormal = normal;
 			return;
 		}
 		return;
