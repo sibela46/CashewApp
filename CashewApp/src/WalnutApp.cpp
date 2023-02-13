@@ -14,7 +14,9 @@ public:
 	ExampleLayer() : m_Camera(45.0f, 0.1f, 100.f) {}
 	virtual void OnUpdate(float ts) override
 	{
-		m_Camera.OnUpdate(ts);
+		bool moved = m_Camera.OnUpdate(ts);
+		if (moved)
+			m_Renderer.ResetAccumulatedBuffer();
 	}
 
 	virtual void OnUIRender() override
@@ -26,8 +28,10 @@ public:
 		ImGui::Checkbox("Smooth Shading", &m_Scene.GetSmoothShading());
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
 		ImGui::Checkbox("Interactive", &m_interactive);
+		ImGui::InputInt("Bounces", &m_Renderer.GetBounces(), 1, 10);
 		if (ImGui::Button("Render"))
 		{
+			m_Renderer.ResetAccumulatedBuffer();
 			Render();
 		}
 		
@@ -95,6 +99,8 @@ public:
 				m_error = true;
 				m_loadOutputText = "File " + file + ".json failed to load.";
 			}
+
+			m_Renderer.ResetAccumulatedBuffer();
 		}
 
 		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_loadOutputText.c_str());

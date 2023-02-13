@@ -18,6 +18,7 @@ public:
 
     void BuildBVH(std::vector<Triangle> tri);
 
+    float EvaluateSAH(BVHNode& node, int axis, float pos);
     void Subdivide(int nodeIdx);
     void UpdateNodeBounds(int nodeIdx);
 

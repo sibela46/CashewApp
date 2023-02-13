@@ -41,10 +41,10 @@ glm::vec3 Scene::ComputeShadingNormal(int triIdx, float u, float v) const
 
 glm::vec3 Scene::GetShading(const Ray& ray) const
 {
-	ShadingInfo shadingInfo = m_triangles[ray.hitObjIdx].colour;
+	glm::vec3 albedo = m_triangles[ray.hitObjIdx].colour;
 	glm::vec3 I = ray.O + ray.t * ray.D;
 	glm::vec3 dirToLight = (m_lightPos - I);
 	glm::vec3 N = m_smoothShading ? ComputeShadingNormal(ray.hitObjIdx, ray.u, ray.v) : ray.faceNormal;
 	float dotProduct = std::max(0.f, glm::dot(glm::normalize(dirToLight), N));
-	return shadingInfo.albedo * dotProduct * (1/PI) * m_lightIntensity;
+	return albedo * dotProduct * (1/PI) * m_lightIntensity;
 }

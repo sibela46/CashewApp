@@ -14,7 +14,7 @@
 // constants
 #define EPSILON			0.0000001
 #define PI				3.14159265358979323846264f
-
+#define INVPI			1.57079632679f
 #define OWN_MULTI_THREADING 0
 
 // Colours
@@ -37,7 +37,6 @@ inline float Area(float a, float b, float c)
 	return sqrtf(s * (s - a) * (s - b) * (s - c));
 }
 
-
 // Classes and structs
 class Ray
 {
@@ -50,17 +49,9 @@ public:
 
 public:
 	glm::vec3 O, D;
-	glm::vec3 faceNormal;
+	glm::vec3 faceNormal, colour;
 	float t, u, v;
 	int hitObjIdx;
-};
-
-struct ShadingInfo
-{
-	glm::vec3 albedo;
-
-	ShadingInfo() = default;
-	ShadingInfo(glm::vec3 albedo) : albedo(albedo) {};
 };
 
 struct Vertex
@@ -96,7 +87,7 @@ struct Triangle
 		verticesPos.push_back(v0);
 		verticesPos.push_back(v1);
 		verticesPos.push_back(v2);
-		centroid = (v0 + v1 + v2) * 0.333f;
+		centroid = (v0 + v1 + v2) * 0.3333f;
 	};
 	Triangle(int id, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 n)
 		: id(id), normal(n)
@@ -132,6 +123,7 @@ struct Triangle
 			ray.u = u;
 			ray.v = v;
 			ray.faceNormal = normal;
+			ray.colour = colour;
 			return;
 		}
 		return;

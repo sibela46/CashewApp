@@ -23,5 +23,5 @@ private:
 	std::vector<Vertex> m_vertices;
 	glm::vec3 m_lightPos;
 	float m_lightIntensity = 2.f;
-	bool m_smoothShading = false;
+	bool m_smoothShading = true;
 };

@@ -12,7 +12,8 @@ void Bvh::BuildBVH(std::vector<Triangle> triangles)
     m_triIndices.resize(N);
     m_BvhNodes = (BVHNode*)_aligned_malloc(sizeof(BVHNode) * N * 2, 64);
 
-    for (int i = 0; i < N; i++) m_triIndices[i] = i;
+    for (int i = 0; i < N; i++)
+        m_triIndices[i] = i;
 
     // Assign all triangles to root node
     BVHNode& root = m_BvhNodes[m_rootNodeIdx];
