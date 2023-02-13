@@ -1,6 +1,5 @@
 #include "utils.h"
-
-std::mutex mtx;
+#include <execution>
 
 Parser::Parser()
 {
@@ -189,70 +188,75 @@ float Parser::CalculateArea(const Triangle& triangle) const
 	return Area(a, b, c);
 }
 
-void Parser::CalculateSmallestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& minArea) const
+float Parser::CalculateSmallestTriangleArea() const
 {
-	for (int i = startIdx; i < endIdx; i++)
+	float minArea = 1e34f;
+	int triIdx = -1;
+	for (const auto& triangle : m_triangles)
 	{
-		const Triangle& triangle = triangles[i];
 		float area = CalculateArea(triangle);
 		if (area > 0 && area < minArea)
 		{
-			std::lock_guard<std::mutex> lock(mtx);
 			minArea = area;
-			triIdx = i;
+			triIdx = triangle.id;
 		}
 	}
+
+	std::cout << "Single thread: Calculated smallest triangle index is " << triIdx << " and its area is " << minArea << std::endl;
+
+	return minArea;
 }
 
-void Parser::CalculateLargestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& maxArea) const
+float Parser::CalculateLargestTriangleArea() const
 {
-	for (int i = startIdx; i < endIdx; i++)
+	float maxArea = -1e34f;
+	int triIdx = -1;
+	for (const auto& triangle : m_triangles)
 	{
-		const Triangle& triangle = triangles[i];
 		float area = CalculateArea(triangle);
 		if (area > 0 && area > maxArea)
 		{
-			std::lock_guard<std::mutex> lock(mtx);
 			maxArea = area;
-			triIdx = i;
+			triIdx = triangle.id;
 		}
 	}
+
+	std::cout << "Single thread: Calculated largest triangle index is " << triIdx << " and its area is " << maxArea << std::endl;
+
+	return maxArea;
 }
 
-void Parser::CalculateAverageTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, float& areaSum) const
+float Parser::CalculateAverageTriangleArea() const
 {
-	for (int i = startIdx; i < endIdx; i++)
+	float areaSum = 0.f;
+	for (const auto& triangle : m_triangles)
 	{
-		const Triangle& triangle = triangles[i];
-		std::lock_guard<std::mutex> lock(mtx);
 		areaSum += CalculateArea(triangle);
 	}
+
+	areaSum /= static_cast<int>(m_triangles.size());
+
+	std::cout << "Single thread: Average triangle area is " << areaSum << std::endl;
+
+	return areaSum;
 }
 
 float Parser::CalculateSmallestAreaMultithreaded() const
 {
-	const int num_threads = 2;
-	std::vector<std::thread> threads;
-	
 	int trianglesCount = static_cast<int>(m_triangles.size());
-	int splitStep = trianglesCount / num_threads;
 
 	int triIdx = 0;
 	float minArea = 1e34f;
-	for (int i = 0; i < num_threads; i++)
-	{
-		int startIdx = i * splitStep;
-		int endIdx = std::min(startIdx + splitStep, trianglesCount);
-		threads.emplace_back(std::thread(&Parser::CalculateSmallestTriangleArea, this, std::ref(m_triangles), startIdx, endIdx, std::ref(triIdx), std::ref(minArea)));
-	}
-	
-	for (std::thread& thread : threads)
-	{
-		if (thread.joinable())
-		{ 
-			thread.join();
-		}
-	}
+	std::for_each(std::execution::par, m_triangles.begin(), m_triangles.end(),
+		[this, &triIdx, &minArea](const Triangle& triangle)
+		{
+			float area = CalculateArea(triangle);
+			if (area > 0 && area < minArea)
+			{
+				minArea = area;
+				triIdx = triangle.id;
+			}
+		});
 
 	std::cout << "Multithread: Calculated smallest triangle index is " << triIdx << " and its area is " << minArea << std::endl;
 	
@@ -261,28 +265,20 @@ float Parser::CalculateSmallestAreaMultithreaded() const
 
 float Parser::CalculateLargestAreaMultithreaded() const
 {
-	const int num_threads = 2;
-	std::vector<std::thread> threads;
-
 	int trianglesCount = static_cast<int>(m_triangles.size());
-	int splitStep = trianglesCount / num_threads;
 
 	int triIdx = 0;
 	float maxArea = -1e34f;
-	for (int i = 0; i < num_threads; i++)
-	{
-		int startIdx = i * splitStep;
-		int endIdx = std::min(startIdx + splitStep, trianglesCount);
-		threads.emplace_back(std::thread(&Parser::CalculateLargestTriangleArea, this, std::ref(m_triangles), startIdx, endIdx, std::ref(triIdx), std::ref(maxArea)));
-	}
-
-	for (std::thread& thread : threads)
-	{
-		if (thread.joinable())
+	std::for_each(std::execution::par, m_triangles.begin(), m_triangles.end(),
+		[this, &triIdx, &maxArea](const Triangle& triangle)
 		{
-			thread.join();
-		}
-	}
+			float area = CalculateArea(triangle);
+			if (area > 0 && area > maxArea)
+			{
+				maxArea = area;
+				triIdx = triangle.id;
+			}
+		});
 
 	std::cout << "Multithread: Calculated largest triangle index is " << triIdx << " and its area is " << maxArea << std::endl;
 	
@@ -291,102 +287,83 @@ float Parser::CalculateLargestAreaMultithreaded() const
 
 float Parser::CalculateAverageAreaMultithreaded() const
 {
-	const int num_threads = 2;
-	std::vector<std::thread> threads;
-
 	int trianglesCount = static_cast<int>(m_triangles.size());
-	int splitStep = trianglesCount / num_threads;
 
-	float areaSum = 0.f;
-	for (int i = 0; i < num_threads; i++)
-	{
-		int startIdx = i * splitStep;
-		int endIdx = std::min(startIdx + splitStep, trianglesCount);
-		threads.emplace_back(std::thread(&Parser::CalculateAverageTriangleArea, this, std::ref(m_triangles), startIdx, endIdx, std::ref(areaSum)));
-	}
+	std::atomic<float> areaSum{ 0 };
 
-	for (std::thread& thread : threads)
-	{
-		if (thread.joinable())
+	std::for_each(std::execution::par, m_triangles.begin(), m_triangles.end(),
+		[this, &areaSum](const Triangle& triangle)
 		{
-			thread.join();
-		}
-	}
+			auto current = areaSum.load();
+			while (!areaSum.compare_exchange_weak(current, current + CalculateArea(triangle)));
+		});
 
-	std::cout << "Multithread: Average triangle area is " << areaSum / trianglesCount << std::endl;
+	float averageArea = areaSum / trianglesCount;
 
-	return areaSum / trianglesCount;
+	std::cout << "Multithread: Average triangle area is " << averageArea << std::endl;
+
+	return averageArea;
 }
 
-void Parser::CalculateSmallestAreaCompared() const
+float Parser::CalculateSmallestAreaCompared() const
 {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	float minArea = 1e34f;
-	int triIdx = -1;
-	int startIdx = 0;
-	int endIdx = static_cast<int>(m_triangles.size());
-	CalculateSmallestTriangleArea(m_triangles, startIdx, endIdx, triIdx, minArea);
+	CalculateSmallestTriangleArea();
 
-	std::cout << "Single thread: Calculated smallest triangle index is " << triIdx << " and its area is " << minArea << std::endl;
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+	std::cout << "Time for execution on one thread = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	
+	begin = std::chrono::steady_clock::now();
+
+	float area = CalculateSmallestAreaMultithreaded();
+
+	end = std::chrono::steady_clock::now();
+
+	std::cout << "Time for execution on all available threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	
+	return area;
+}
+
+float Parser::CalculateLargestAreaCompared() const
+{
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+	CalculateLargestTriangleArea();
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
 	std::cout << "Time for execution on one thread = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
 	begin = std::chrono::steady_clock::now();
 
-	CalculateSmallestAreaMultithreaded();
+	float area = CalculateLargestAreaMultithreaded();
 
 	end = std::chrono::steady_clock::now();
 
-	std::cout << "Time for execution on two threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	std::cout << "Time for execution on all available threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	
+	return area;
 }
 
-void Parser::CalculateLargestAreaCompared() const
+float Parser::CalculateAverageAreaCompared() const
 {
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-	float maxArea = -1e34f;
-	int triIdx = -1;
-	int startIdx = 0;
-	int endIdx = static_cast<int>(m_triangles.size());
-	CalculateLargestTriangleArea(m_triangles, startIdx, endIdx, triIdx, maxArea);
-
-	std::cout << "Single thread: Calculated largest triangle index is " << triIdx << " and its area is " << maxArea << std::endl;
+	CalculateAverageTriangleArea();
 
 	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
 	std::cout << "Time for execution on one thread = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
 	begin = std::chrono::steady_clock::now();
 
-	CalculateLargestAreaMultithreaded();
+	float area = CalculateAverageAreaMultithreaded();
 
 	end = std::chrono::steady_clock::now();
 
-	std::cout << "Time for execution on two threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
-}
-
-void Parser::CalculateAverageAreaCompared() const
-{
-	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-
-	float areaSum = 0.f;
-	int startIdx = 0;
-	int trianglesCount = static_cast<int>(m_triangles.size());
-	CalculateAverageTriangleArea(m_triangles, startIdx, trianglesCount, areaSum);
-
-	std::cout << "Single thread: Average triangle area is " << areaSum / trianglesCount << std::endl;
-
-	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-
-	std::cout << "Time for execution on one thread = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
-	begin = std::chrono::steady_clock::now();
-
-	CalculateAverageAreaMultithreaded();
-
-	end = std::chrono::steady_clock::now();
-
-	std::cout << "Time for execution on two threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	std::cout << "Time for execution on all available threads = " << (std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count()) / 1000000.0 << "s" << std::endl;
+	
+	return area;
 }
 
 bool Parser::IsClosedMesh() const

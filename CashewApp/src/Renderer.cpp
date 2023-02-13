@@ -5,7 +5,7 @@
 
 Renderer::Renderer()
 {
-	m_cameraPos = glm::vec3(0.f, 1.f, -3.f);
+	m_cameraPos = glm::vec3(0.f, 0.f, -3.f);
 }
 
 void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -40,7 +40,6 @@ void Renderer::Render(const Camera& camera, const Scene& scene)
 
 	if (!m_FinalImageData) return;
 
-#if MULTI_THREADING
 	std::for_each(std::execution::par, m_ImageVerticalIter.begin(), m_ImageVerticalIter.end(),
 		[this](uint32_t y)
 		{
@@ -50,16 +49,7 @@ void Renderer::Render(const Camera& camera, const Scene& scene)
 					m_FinalImageData[x + y * m_FinalImage->GetWidth()] = ConvertToRGBA(Trace(x, y));
 				});
 		});
-#else
-	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
-	{
-		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
-		{
-			Ray ray (camera.GetPosition(), camera.GetRayDirections()[x + y * m_FinalImage->GetWidth()]);
-			m_FinalImageData[x + y * m_FinalImage->GetWidth()] = ConvertToRGBA(Trace(ray, scene));
-		}
-	}
-#endif
+
 	m_FinalImage->SetData(m_FinalImageData);
 }
 

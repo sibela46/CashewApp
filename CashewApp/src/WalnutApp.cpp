@@ -105,19 +105,19 @@ public:
 
 		if (ImGui::Button("Average Area"))
 		{
-			float area = m_Parser.CalculateAverageAreaMultithreaded();
+			float area = m_Parser.CalculateAverageAreaCompared();
 			m_statsOutputText = "Average triangle area for loaded file is " + std::to_string(area);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Smallest Area"))
 		{
-			float area = m_Parser.CalculateSmallestAreaMultithreaded();
+			float area = m_Parser.CalculateSmallestAreaCompared();
 			m_statsOutputText = "Smallest triangle area for loaded file is " + std::to_string(area);
 		}
 
 		if (ImGui::Button("Largest Area"))
 		{
-			float area = m_Parser.CalculateLargestAreaMultithreaded();
+			float area = m_Parser.CalculateLargestAreaCompared();
 			m_statsOutputText = "Largest triangle area for loaded file is " + std::to_string(area);
 		}
 		ImGui::SameLine();

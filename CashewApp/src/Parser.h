@@ -13,17 +13,17 @@ public:
 
 	float CalculateArea(const Triangle& triangle) const;
 
-	void CalculateSmallestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& minArea) const;
-	void CalculateLargestTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, int& triIdx, float& maxArea) const;
-	void CalculateAverageTriangleArea(const std::vector<Triangle>& triangles, int startIdx, int endIdx, float& areaSum) const;
+	float CalculateSmallestTriangleArea() const;
+	float CalculateLargestTriangleArea() const;
+	float CalculateAverageTriangleArea() const;
 
 	float CalculateSmallestAreaMultithreaded() const;
 	float CalculateLargestAreaMultithreaded() const;
 	float CalculateAverageAreaMultithreaded() const;
 
-	void CalculateSmallestAreaCompared() const;
-	void CalculateLargestAreaCompared() const;
-	void CalculateAverageAreaCompared() const;
+	float CalculateSmallestAreaCompared() const;
+	float CalculateLargestAreaCompared() const;
+	float CalculateAverageAreaCompared() const;
 
 	bool IsClosedMesh() const;
 
