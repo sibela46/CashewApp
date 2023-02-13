@@ -1,6 +1,8 @@
 #include "utils.h"
 #include <execution>
 
+std::mutex mtx;
+
 Parser::Parser()
 {
 
@@ -289,7 +291,41 @@ float Parser::CalculateAverageAreaMultithreaded() const
 {
 	int trianglesCount = static_cast<int>(m_triangles.size());
 
-	std::atomic<float> areaSum{ 0 };
+#ifdef OWN_MULTI_THREADING
+	const int num_threads = std::thread::hardware_concurrency();
+	std::vector<std::thread> threads;
+	threads.resize(num_threads);
+
+	float areaSum = 0.f;
+	int splitStep = trianglesCount / num_threads;
+	for (int i = 0; i < num_threads; i++)
+	{
+		threads.emplace_back(std::thread([this, i, splitStep, &areaSum]()
+			{
+				int startIdx = i * splitStep;
+				int endIdx = startIdx + splitStep;
+				for (int i = startIdx; i < endIdx; i++)
+				{
+					std::lock_guard<std::mutex> lock(mtx);
+					const Triangle& triangle = m_triangles[i];
+					areaSum += CalculateArea(triangle);
+				}
+			}));
+	}
+
+	for (auto& thread : threads)
+	{
+		if (thread.joinable())
+		{
+			thread.join();
+		}
+	}
+
+	float averageArea = areaSum / trianglesCount;
+	std::cout << "Multithread: Average triangle area is " << averageArea << std::endl;
+
+#else
+	std::atomic<float> areaSum{ 0.f };
 
 	std::for_each(std::execution::par, m_triangles.begin(), m_triangles.end(),
 		[this, &areaSum](const Triangle& triangle)
@@ -301,6 +337,8 @@ float Parser::CalculateAverageAreaMultithreaded() const
 	float averageArea = areaSum / trianglesCount;
 
 	std::cout << "Multithread: Average triangle area is " << averageArea << std::endl;
+
+#endif // OWN_MULTI_THREADING
 
 	return averageArea;
 }
