@@ -15,7 +15,7 @@
 #define EPSILON			0.0000001
 #define PI				3.14159265358979323846264f
 #define INVPI			1.57079632679f
-#define OWN_MULTI_THREADING 0
+#define OWN_MULTI_THREADING 1
 
 // Colours
 inline uint32_t ConvertToRGBA(const glm::vec3& colour)
@@ -75,7 +75,14 @@ struct Triangle
 	glm::vec3 normal, centroid;
 	glm::vec3 colour;
 
-	Triangle() = default;
+	Triangle()
+	{
+		id = 0;
+		verticesPos.reserve(3);
+		verticesPos.push_back(glm::vec3(0));
+		verticesPos.push_back(glm::vec3(0));
+		verticesPos.push_back(glm::vec3(0));
+	}
 	Triangle(int id, glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, int vIdx1, int vIdx2, int vIdx3, glm::vec3 n, glm::vec3 colour)
 		: id(id), normal(n), colour(colour)
 	{

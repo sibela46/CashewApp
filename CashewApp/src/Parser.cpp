@@ -1,7 +1,6 @@
 #include "utils.h"
 #include <execution>
-
-std::mutex mtx;
+#include <future>
 
 Parser::Parser()
 {
@@ -114,6 +113,8 @@ bool Parser::ParseFile(const char* fileName, float scale, glm::vec3 colour)
 					auto itEdge = m_edges.find(edge);
 					auto itEdgeSwap = m_edges.find(edgeSwap);
 
+					// Check for both versions of edge in map - vertex1, vertex2 and vertex2, vertex1
+					// (normal comparison doesn't support this)
 					if (itEdge == m_edges.end() && itEdgeSwap == m_edges.end())
 						m_edges[edge].push_back(triangleIdx);
 					else if (itEdge != m_edges.end())
@@ -291,37 +292,38 @@ float Parser::CalculateAverageAreaMultithreaded() const
 {
 	int trianglesCount = static_cast<int>(m_triangles.size());
 
-#ifdef OWN_MULTI_THREADING
-	const int num_threads = std::thread::hardware_concurrency();
+#if OWN_MULTI_THREADING
+	int num_threads = std::min(trianglesCount, (int)std::thread::hardware_concurrency());
 	std::vector<std::thread> threads;
 	threads.resize(num_threads);
 
 	float areaSum = 0.f;
-	int splitStep = trianglesCount / num_threads;
+	std::mutex mtx;
+
+	auto calculateAverageArea = [this](std::mutex& mtx, float& areaSum, int i, int trianglesCount, int num_threads)
+	{ 
+		float splitStep = (float)trianglesCount / (float)num_threads;
+		int startIdx = i * splitStep;
+		int endIdx = (i == num_threads - 1) ? trianglesCount : startIdx + splitStep;
+		for (int i = startIdx; i < endIdx; i++)
+		{
+			std::lock_guard<std::mutex> lock(mtx);
+			areaSum += CalculateArea(m_triangles[i]);
+		}
+	};
+
 	for (int i = 0; i < num_threads; i++)
 	{
-		threads.emplace_back(std::thread([this, i, splitStep, &areaSum]()
-			{
-				int startIdx = i * splitStep;
-				int endIdx = startIdx + splitStep;
-				for (int i = startIdx; i < endIdx; i++)
-				{
-					std::lock_guard<std::mutex> lock(mtx);
-					const Triangle& triangle = m_triangles[i];
-					areaSum += CalculateArea(triangle);
-				}
-			}));
+		threads[i] = (std::thread(calculateAverageArea, std::ref(mtx), std::ref(areaSum), i, trianglesCount, num_threads));
 	}
 
-	for (auto& thread : threads)
+	for (int i = 0; i < threads.size(); i++)
 	{
-		if (thread.joinable())
-		{
-			thread.join();
-		}
+		threads[i].join();
 	}
 
 	float averageArea = areaSum / trianglesCount;
+
 	std::cout << "Multithread: Average triangle area is " << averageArea << std::endl;
 
 #else

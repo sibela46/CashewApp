@@ -45,6 +45,12 @@ public:
 		ImGui::DragFloat("Light Z", &m_Scene.GetLightPos().z, 0.1f);
 		ImGui::DragFloat("Intensity", &m_Scene.GetLightIntensity(), 0.1f);
 
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		ImGui::Text("USER MANUAL");
+		ImGui::Text("To move around with the camera,\nhold down right mouse button and use W-A-S-D-Q-E \n (make sure the Interactive is on).");
+
 		ImGui::End();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
