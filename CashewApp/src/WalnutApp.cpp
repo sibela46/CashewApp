@@ -14,9 +14,7 @@ public:
 	ExampleLayer() : m_Camera(45.0f, 0.1f, 100.f) {}
 	virtual void OnUpdate(float ts) override
 	{
-		bool moved = m_Camera.OnUpdate(ts);
-		if (moved)
-			m_Renderer.ResetAccumulatedBuffer();
+		m_Camera.OnUpdate(ts);
 	}
 
 	virtual void OnUIRender() override
@@ -28,10 +26,8 @@ public:
 		ImGui::Checkbox("Smooth Shading", &m_Scene.GetSmoothShading());
 		ImGui::Text("Last render: %.3fms", m_LastRenderTime);
 		ImGui::Checkbox("Interactive", &m_interactive);
-		ImGui::InputInt("Bounces", &m_Renderer.GetBounces(), 1, 10);
 		if (ImGui::Button("Render"))
 		{
-			m_Renderer.ResetAccumulatedBuffer();
 			Render();
 		}
 		
@@ -79,15 +75,14 @@ public:
 		static char jsonFileBuffer[128];
 		ImGui::InputText("JSON File Name", jsonFileBuffer, IM_ARRAYSIZE(jsonFileBuffer));
 		ImGui::InputFloat("Scale", &m_scale);
-		ImGui::InputFloat("R", &m_colour.x);
-		ImGui::InputFloat("G", &m_colour.y);
-		ImGui::InputFloat("B", &m_colour.z);
+		ImGui::InputFloat3("Colour", colour);
 		if (ImGui::Button("Load"))
 		{
 			std::string file(jsonFileBuffer);
 			std::string path = "./data/";
 			std::string jsonExt = ".json";
-			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str(), m_scale, m_colour/255.f))
+			glm::vec3 vecColour = glm::vec3(colour[0], colour[1], colour[2]);
+			if (m_Parser.ParseFile(path.append(file).append(jsonExt).c_str(), m_scale, vecColour/255.f))
 			{
 				m_Parser.CalculateVertexNormals();
 				m_Scene.LoadModelToScene(m_Parser.GetTriangles(), m_Parser.GetVertices());
@@ -99,8 +94,6 @@ public:
 				m_error = true;
 				m_loadOutputText = "File " + file + ".json failed to load.";
 			}
-
-			m_Renderer.ResetAccumulatedBuffer();
 		}
 
 		ImGui::TextColored(m_error ? ImVec4(255, 0, 0, 255) : ImVec4(0, 255, 0, 255), m_loadOutputText.c_str());
@@ -164,7 +157,8 @@ private:
 	bool m_error = false, m_interactive = false, m_smoothShading = false;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 	float m_LastRenderTime = 0, m_scale = 1.f;
-	glm::vec3 m_queryPoint = glm::vec3(0), m_colour = glm::vec3(255, 0, 255);
+	glm::vec3 m_queryPoint = glm::vec3(0);
+	float colour[3] = { 255.f, 0.f, 255.f };
 	std::string fileName = "Type in the JSON file you want to load.";
 };
 
